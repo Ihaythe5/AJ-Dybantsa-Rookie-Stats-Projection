@@ -1,19 +1,15 @@
 """
 AJ Dybantsa NBA Rookie-Season Projection Model
-------------------------------------------------
 Approach: Age-cohort percentile model.
+
 
 We don't have college stats or draft position for the historical rookies
 (only NBA rookie-season debut stats), so instead of a college->NBA regression,
-we build the empirical distribution of rookie outcomes for players who debuted
-at the SAME AGE as Dybantsa (19), then position him within that distribution
-using percentile anchoring based on known context:
-  - #1 overall pick (highest possible draft capital)
+we build the distribution of rookie outcomes for players who debuted
+at the SAME AGE as Dybantsa (19), then position him within that distribution:
+  - #1 overall pick 
   - Historically dominant, efficient college production (28.1 PER, 60% TS)
-  - Walking into a rebuilding team (Wizards) -> likely high usage/minutes as a rookie
-
-Output: a percentile-based projection range per stat, plus a chart showing
-where he's expected to land within the age-19 rookie distribution.
+  - Walking into a rebuilding team (Wizards) likely high usage/minutes as a rookie
 """
 
 from pathlib import Path
@@ -23,7 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# Load & clean the three rookie-season files
+# Load & clean the three files
 project_dir = Path(__file__).resolve().parent
 files = {
     '2023-24': project_dir / 'rookieStats_23-24.csv',
@@ -47,13 +43,13 @@ master = master.rename(columns={
     'STL.1': 'SPG', 'BLK.1': 'BPG'
 })
 
-# Drop rows with missing essential data (some rows are blank separators from B-Ref exports)
+# Drop rows with missing essential data
 master = master.dropna(subset=['Player', 'Age', 'G'])
 master['Age'] = pd.to_numeric(master['Age'], errors='coerce')
 master = master.dropna(subset=['Age'])
 master['Age'] = master['Age'].astype(int)
 
-# Filter out extremely low-sample noise (single-game call-ups distort percentiles)
+# Filter out extremely low-sample noise
 qualified = master[master['G'] >= 10].copy()
 
 print(f"Loaded {len(master)} total rookie entries ({len(qualified)} with 10+ games played)")
@@ -106,7 +102,7 @@ for stat, vals in projections.items():
           f"(cohort median: {vals['cohort_median']}, cohort max: {vals['cohort_max']})")
 
 
-# Who are the top comps in this cohort? (for context/sanity check)
+# Who are the top comps in this cohort?
 
 top_scorers = cohort.nlargest(8, 'PPG')[['Player', 'season', 'Age', 'G', 'MPG', 'PPG', 'RPG', 'APG', 'FG%', '3P%']]
 print("\nTop 8 scorers in the age cohort (context for where Dybantsa's projection sits):")
@@ -133,7 +129,7 @@ for i, stat in enumerate(stat_cols):
     if i == 0:
         ax.legend(fontsize=8, loc='upper right')
 
-axes[-1].axis('off')  # 6th subplot unused, hide it
+axes[-1].axis('off')  
 fig.suptitle(f'AJ Dybantsa Rookie Projection vs. Age-{cohort_label} '
              f'Rookie Cohort (n={len(cohort)}, seasons 2023-24 to 2025-26)',
              fontsize=13, fontweight='bold')
